@@ -20,6 +20,7 @@ import mimetypes
 from time import time
 from zlib import adler32
 from threading import RLock
+from werkzeug.routing import BuildError
 from werkzeug.urls import url_quote
 
 # try to load the best simplejson implementation available.  If JSON
@@ -234,12 +235,19 @@ def url_for(endpoint, **values):
                 endpoint = blueprint_name + '.' + endpoint
         elif endpoint.startswith('.'):
             endpoint = endpoint[1:]
+
     external = values.pop('_external', False)
     anchor = values.pop('_anchor', None)
     method = values.pop('_method', None)
     ctx.app.inject_url_defaults(endpoint, values)
-    rv = ctx.url_adapter.build(endpoint, values, method=method,
-                               force_external=external)
+    try:
+        rv = ctx.url_adapter.build(endpoint, values, method=method,
+                                   force_external=external)
+    except BuildError, error:
+        values['_external'] = external
+        values['_anchor'] = anchor
+        values['_method'] = method
+        return ctx.app.handle_build_error(error, endpoint, **values)
     if anchor is not None:
         rv += '#' + url_quote(anchor)
     return rv

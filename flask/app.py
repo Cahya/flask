@@ -328,6 +328,9 @@ class Flask(_PackageBoundObject):
         #: decorator.
         self.error_handler_spec = {None: self._error_handlers}
 
+        #: TODO: url_for doc
+        self.build_error_handler = None
+
         #: A dictionary with lists of functions that should be called at the
         #: beginning of the request.  The key of the dictionary is the name of
         #: the blueprint this function is active for, `None` for all requests.
@@ -1408,6 +1411,12 @@ class Flask(_PackageBoundObject):
             funcs = chain(funcs, self.url_default_functions.get(bp, ()))
         for func in funcs:
             func(endpoint, values)
+
+    def handle_build_error(self, error, endpoint, **values):
+        """TODO: url_for doc"""
+        if self.build_error_handler is None:
+            raise error
+        return self.build_error_handler(error, endpoint, **values)
 
     def preprocess_request(self):
         """Called before the actual request dispatching and will
